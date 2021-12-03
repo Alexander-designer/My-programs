@@ -63,7 +63,9 @@ def cut_file():
     wb = Excel.Workbooks.Open('D:\Python_3.8\.Projects\Rename_files\_folder2/temp.xlsx')
     sheet = wb.ActiveSheet
 
-    cell_C = []
+##############################################################################
+# Bad Bad coding. Don't do it next time...
+cell_C = []
     cell_D = []
     cell_E = []
     dir_dfine()
@@ -103,6 +105,9 @@ def cut_file():
             sheet.Cells(i, 'D').value = file_name[21:-4]
             sheet.Cells(i, 'E').value = file_name[-4:]
         i += 1
+
+# Ok Bass
+#######################################################################
 
     wb.Save()
 #    Excel.Quit()
