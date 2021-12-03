@@ -1,0 +1,154 @@
+# This is the programm which can put the name of files
+# to the excel sheet (temp.xlsx) to the column A.
+# In the excel sheet user have to put new name of files in column B.
+# Using the data from column B, the program can change the file's names in the folder.
+#------------------------------------------------------------------------------------
+# Ver.2.0
+#------------------------------------------------------------------------------------
+# Code simplified, win32com.client module apples instead of xlsxwriter module.
+#
+import sys, os
+import xlsxwriter
+import win32com.client
+from tkinter import *
+from tkinter.ttk import Combobox
+from tkinter import filedialog as fd
+
+def read_write_to_excel(schedule_x, Cell_X, rw):
+    Excel = win32com.client.Dispatch("Excel.Application")
+    Excel.Visible = False
+    wb = Excel.Workbooks.Open(f'{directory}/temp.xlsx')
+    sheet = wb.ActiveSheet
+    if rw == 'w':   # means write to excel
+        i = 1
+        for file in files:
+            sheet.Cells(i, Cell_X).value = schedule_x
+            i += 1
+    wb.Save()
+    if rw == 'r':   # means read from excel
+        pass
+
+    Excel.Quit()
+
+
+def write_to_excel(schedule_x, Cell_X):
+    # -here we create the list <files> which the names of have taken form folder:
+#    files = sorted([path for path in os.listdir(directory_x)])
+    workbook = xlsxwriter.Workbook('temp.xlsx')
+    # -create excel sheet:
+    worksheet = workbook.add_worksheet()
+    # -Write data from "files" to *.xlsx file
+    for i, y in enumerate(schedule_x, start=1):
+        worksheet.write(f'{Cell_X}{i}', y)
+    workbook.close()
+
+def dir_dfine():
+    global directory
+    global files
+    directory = fd.askdirectory()
+    os.chdir(directory)
+    files = sorted([path for path in os.listdir(directory)])
+    return directory, files
+
+def create_table():
+# -it works:
+    dir_dfine()
+    write_to_excel(schedule_x=files, Cell_X="A")
+# -excel file are going to open for redaction data in it:
+    os.startfile('temp.xlsx')
+
+def cut_file():
+    Excel = win32com.client.Dispatch("Excel.Application")
+    Excel.Visible = True
+    wb = Excel.Workbooks.Open('D:\Python_3.8\.Projects\Rename_files\_folder2/temp.xlsx')
+    sheet = wb.ActiveSheet
+
+    cell_C = []
+    cell_D = []
+    cell_E = []
+    dir_dfine()
+# Check list index:
+# index: 01234567891111111111222222
+# index:           0123456789012345
+# list:  АБВГ.10000.00.00.000-01 СБ
+# list:  АБВГ.10000.00.00.000-01СБ
+# list:  АБВГ.10000.00.00.000-01
+# list:  АБВГ.10000.00.00.000 СБ
+# list:  АБВГ.10000.00.00.000СБ
+# list:  АБВГ.10000.00.00.000
+    i = 0
+    for file_name in files:
+        if file_name[20:26] == "-01 СБ":
+            sheet.Cells(i, 'C').value = file_name[:26]
+            sheet.Cells(i, 'D').value = file_name[27:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        elif file_name[20:25] == "-01СБ":
+            sheet.Cells(i, 'C').value = file_name[:25]
+            sheet.Cells(i, 'D').value = file_name[26:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        elif file_name[20:23] == "-01":
+            sheet.Cells(i, 'C').value = file_name[:23]
+            sheet.Cells(i, 'D').value = file_name[24:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        elif file_name[20:23] == " СБ":
+            sheet.Cells(i, 'C').value = file_name[:23]
+            sheet.Cells(i, 'D').value = file_name[24:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        elif file_name[20:22] == "СБ":
+            sheet.Cells(i, 'C').value = file_name[:22]
+            sheet.Cells(i, 'D').value = file_name[23:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        elif file_name[20:21] == " ":
+            sheet.Cells(i, 'C').value = file_name[:20]
+            sheet.Cells(i, 'D').value = file_name[21:-4]
+            sheet.Cells(i, 'E').value = file_name[-4:]
+        i += 1
+
+    wb.Save()
+#    Excel.Quit()
+
+def rename_file():
+    dir_dfine()
+#    os.chdir(directory)
+    Excel = win32com.client.Dispatch("Excel.Application")
+    Excel.Visible = False
+    wb = Excel.Workbooks.Open(f'{directory}/temp.xlsx')
+    sheet = wb.ActiveSheet
+# defind the number of end of list.
+    i = 0
+    val = []
+    for row in sheet.Range('A:A'):
+        val.append(str(row))
+        if val[i] == 'None':
+            break
+        i += 1
+# put number of last filled line to the cell range.
+    columnA = [r[0].value for r in sheet.Range(f"A1:A{len(val)}")]
+    columnB = [r[0].value for r in sheet.Range(f"B1:B{len(val)}")]
+    for colA, colB in zip(columnA, columnB):
+        try:
+            os.rename(f'{directory}/{colA}', f'{directory}/{colB}')
+        except Exception:
+            print('Files rename finished')
+            break
+    Excel.Quit()
+
+def main():
+    root = Tk()
+    root.title('Breakdown File Manager')
+    x = (root.winfo_screenwidth() - root.winfo_reqwidth()) / 2
+    y = (root.winfo_screenheight() - root.winfo_reqheight()) / 2
+    root.geometry("+%d+%d" % (x-180, y))
+
+    entr1 = Button(root, text=' Create Table                    ', command = create_table)
+    entr1.grid(column=1, row=1)
+    entr2 = Button(root, text=' Cut ABCD.12345.678.90 ', command = cut_file)
+    entr2.grid(column=1, row=2)
+    entr3 = Button(root, text=' Rename files                    ', command = rename_file)
+    entr3.grid(column=1, row=3)
+    entr4 = Button(root, text=' Exit                                    ', command =  exit)
+    entr4.grid(column=1, row=5)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
